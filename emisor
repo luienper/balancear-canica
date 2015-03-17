@@ -1,0 +1,85 @@
+// these constants describe the pins. They won't change:
+#include<Servo.h>
+#include <avr/math.h>
+const int groundpin = 18; // analog input pin 4 -- ground
+const int powerpin = 14; // analog input pin 5 -- voltage
+const int xpin = A1; // x-axis of the accelerometer
+const int ypin = A2; // y-axis
+const int zpin = A3; // z-axis (only on 3-axis models)
+double a_rad,a_deg,st,st0,a;
+double a_radXZ,a_degXZ,stXZ,st0XZ;
+Servo myservoYZ,myservoXZ;
+int xAng ,yAng ,zAng;
+int minVal = 265;    // Valores mínimos y máximos del acelerometro en reposo
+int maxVal = 402;
+void setup()
+{
+// initialize the serial communications:
+Serial.begin(9600);
+// Provide ground and power by using the analog inputs as normal
+// digital pins. This makes it possible to directly connect the
+// breakout board to the Arduino. If you use the normal 5V and
+// GND pins on the Arduino, you can remove these lines.
+  myservoYZ.attach(9);
+  myservoXZ.attach(10);
+  pinMode(groundpin, OUTPUT);
+  pinMode(powerpin, OUTPUT);
+  digitalWrite(groundpin, LOW);
+  digitalWrite(powerpin, HIGH);
+  st0=0;
+  st0XZ=0;
+  a=0.35; 
+}
+void loop()
+{
+  String x,y,z,accData;
+  x = (String) analogRead(xpin);
+  y = (String) analogRead(ypin);
+  z = (String) analogRead(zpin);
+  
+  xAng = map(analogRead(xpin), minVal, maxVal, -90, 90);
+  yAng = map(analogRead(ypin), minVal, maxVal, -90, 90);
+  zAng = map(analogRead(zpin), minVal, maxVal, -90, 90);
+  
+  
+  // delay before next reading:
+  //Calcula el angulo en radianes entre los ejes Z y Y (en unidades g)
+  a_rad = atan2(zAng,yAng);
+  //atan2 va de 0 a π y de 0 a –π. Esto cambia ese rango de 0 a 2π.
+  if (a_rad < 0)
+  a_rad = 2*PI + a_rad;
+  //Cambia el ángulo de radianes a grados.
+  a_deg = (a_rad *180/PI);
+  
+  if(a_deg > 150)
+    a_deg = 150;   
+  st=a*a_deg+(1-a)*st0;
+  st0=st;  
+  
+  a_radXZ = atan2(zAng,xAng);
+  //atan2 va de 0 a π y de 0 a –π. Esto cambia ese rango de 0 a 2π.
+  if (a_radXZ < 0)
+  a_radXZ = 2*PI + a_rad;
+  //Cambia el ángulo de radianes a grados.
+  a_degXZ = (a_radXZ *180/PI);
+  
+  if(a_degXZ > 150)
+    a_degXZ = 150;   
+  stXZ=a*a_degXZ+(1-a)*st0XZ;
+  st0XZ=stXZ;  
+  
+  myservoXZ.write(stXZ);
+  myservoYZ.write(st);
+  accData = (String) stXZ + "\t" + (String) st;
+  // print the sensor values:
+  Serial.println(accData);
+  
+  delay(100);
+}
+//Transforma la salida del ADC de 10 bits (0 - 1024) a valores de g (9.81 m/s^2)
+double rescale(double c){
+  int maxV33ref = 676; //maximo valor de voltaje del acelerometro 3.3V
+  double c_g = map(c,0,maxV33ref,-5000,5000); //mapea la salida del acelerometro: 0V - 3.3V a: -5g a 5g
+  c_g = c_g/1000;
+  return c_g;
+}
