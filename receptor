@@ -1,0 +1,52 @@
+#include<Servo.h>
+#include<String.h>
+
+Servo myservoXZ, myservoYZ;
+int count = 0;
+int final = 0;
+String strXZ = "";
+String strYZ = "";
+String linea = "";
+double anguloXZ, anguloYZ;
+char serialdata[20];
+int posicion_tab=0;
+
+void setup()
+{
+  Serial.begin(9600);
+  myservoXZ.attach(9); // configura el servo motor en el Puerto 9
+  myservoYZ.attach(10); // configura el servo motor en el Puerto 9
+}
+void loop()
+{
+  
+    linea = Serial.readStringUntil('\n');
+    posicion_tab = linea.indexOf('\t');
+    strXZ = linea.substring(0,posicion_tab);
+//    strXZ = strXZ.substring(0,strXZ.length()-4);
+    final = linea.length();
+    strYZ = linea.substring(posicion_tab);
+    //strXZ = linea.readStringUntil('\t');
+    //Serial.println("XZ: " + strXZ);
+    //Serial.println("YZ: " + strYZ);
+    Serial.println("linea: " + linea + "posicion: "+(String)posicion_tab + "final: " + (String)final);
+    Serial.println(strXZ+'\t\t'+strYZ);
+    anguloXZ = strXZ.toFloat() + 23.0;
+    anguloYZ = strYZ.toFloat() + 23.0;
+    if(anguloXZ>120)
+      anguloXZ=120;
+    if(anguloXZ<35)
+      anguloXZ=35;
+    if(anguloYZ>120)
+      anguloYZ=120;
+    if(anguloYZ<35)
+      anguloYZ=35;  
+    myservoXZ.write(anguloXZ);
+    myservoYZ.write(anguloYZ);
+    strXZ = "";
+    strYZ = "";
+    posicion_tab=0;
+    final=0;
+ 
+  
+}
